@@ -1,5 +1,8 @@
 # GitDiff BC - Beyond Compare Git 对比工具
 
+[![GitHub Repository](https://img.shields.io/badge/GitHub-gitdiff--bc-blue?logo=github)](https://github.com/sunbo008/gitdiff-bc)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 一个 VSCode / Cursor 扩展，使用 Beyond Compare 快速比较文件/文件夹与 Git 历史版本。
 
 ## 功能特性
@@ -130,7 +133,13 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ## 问题反馈
 
-如果遇到问题或有功能建议，欢迎在 GitHub 仓库提交 Issue。
+如果遇到问题或有功能建议，欢迎在 GitHub 仓库提交 Issue：
+
+- 🐛 **Bug 报告**: [提交 Bug](https://github.com/sunbo008/gitdiff-bc/issues/new?labels=bug)
+- 💡 **功能建议**: [提交建议](https://github.com/sunbo008/gitdiff-bc/issues/new?labels=enhancement)
+- 📋 **查看所有 Issues**: [Issues 列表](https://github.com/sunbo008/gitdiff-bc/issues)
+
+**GitHub 仓库**: [https://github.com/sunbo008/gitdiff-bc](https://github.com/sunbo008/gitdiff-bc)
 
 ## 更新日志
 

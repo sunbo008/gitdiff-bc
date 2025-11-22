@@ -31,14 +31,6 @@
       {
         "command": "extension.compareFolderWithHead",
         "title": "%command.compareFolderWithHead%"
-      },
-      {
-        "command": "extension.showLogFile",
-        "title": "%command.showLogFile%"
-      },
-      {
-        "command": "extension.openLogDirectory",
-        "title": "%command.openLogDirectory%"
       }
     ],
     "menus": {

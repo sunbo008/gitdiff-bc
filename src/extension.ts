@@ -52,25 +52,6 @@ export function activate(context: vscode.ExtensionContext) {
     );
     Logger.debug(t('extension.commandRegistered') + ': extension.compareFolderWithHead');
 
-    // 注册命令：显示日志文件
-    Logger.debug('注册命令: extension.showLogFile');
-    const showLogFileCommand = vscode.commands.registerCommand(
-      'extension.showLogFile',
-      () => {
-        Logger.showLogFile();
-      }
-    );
-    Logger.debug('✓ 命令已注册: extension.showLogFile');
-
-    // 注册命令：打开日志目录
-    Logger.debug('注册命令: extension.openLogDirectory');
-    const openLogDirCommand = vscode.commands.registerCommand(
-      'extension.openLogDirectory',
-      () => {
-        Logger.openLogDirectory();
-      }
-    );
-    Logger.debug('✓ 命令已注册: extension.openLogDirectory');
 
     // 监听配置变化
     const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
@@ -84,8 +65,6 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
       compareFileCommand,
       compareFolderCommand,
-      showLogFileCommand,
-      openLogDirCommand,
       configWatcher
     );
 
@@ -97,12 +76,9 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.commands.getCommands(true).then(
         (commands) => {
           const ourCommands = commands.filter(cmd => 
-            cmd.startsWith('extension.compare') || 
-            cmd.startsWith('extension.showLog') || 
-            cmd.startsWith('extension.openLog')
+            cmd.startsWith('extension.compare')
           );
           Logger.info(`已注册的扩展命令: ${ourCommands.join(', ')}`);
-          Logger.info(`日志文件位置: ${Logger.getLogFilePath() || '初始化中...'}`);
         },
         (err: any) => {
           Logger.error('获取命令列表失败:', err);

@@ -4,8 +4,6 @@
   
   "command.compareFileWithHead": "Compare File with Git HEAD",
   "command.compareFolderWithHead": "Compare Folder with Git HEAD",
-  "command.showLogFile": "Beyond Compare Git: Show Log File",
-  "command.openLogDirectory": "Beyond Compare Git: Open Log Directory",
   
   "configuration.title": "Beyond Compare Git",
   "configuration.executablePath.description": "Custom path to Beyond Compare executable. Leave empty for auto-detection.\n\n**Examples**:\n- Windows: `C:\\Program Files\\Beyond Compare 4\\BCompare.exe`\n- macOS: `/Applications/Beyond Compare.app/Contents/MacOS/bcomp`\n- Linux: `/usr/bin/bcompare`",
