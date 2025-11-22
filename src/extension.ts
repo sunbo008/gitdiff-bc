@@ -3,6 +3,7 @@ import { compareFileWithHead } from './commands/compareFile';
 import { compareFolderWithHead } from './commands/compareFolder';
 import { Logger } from './utils/logger';
 import { TempFileManager } from './utils/tempFile';
+import { t } from './utils/i18n';
 
 /**
  * 扩展激活时调用
@@ -12,7 +13,7 @@ export function activate(context: vscode.ExtensionContext) {
     // 初始化日志记录器（必须最先执行）
     Logger.initialize(context);
     
-    Logger.info('=== Beyond Compare Git 扩展开始激活 ===');
+    Logger.info(t('extension.activating'));
     Logger.info(`扩展 ID: gitdiff-bc`);
     Logger.info(`扩展路径: ${context.extensionPath}`);
     Logger.info(`工作区文件夹: ${vscode.workspace.workspaceFolders?.map(f => f.uri.fsPath).join(', ') || '无'}`);
@@ -28,11 +29,11 @@ export function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           Logger.error('执行比较文件命令失败:', errorMessage);
-          vscode.window.showErrorMessage(`执行命令失败: ${errorMessage}`);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
         }
       }
     );
-    Logger.debug('✓ 命令已注册: extension.compareFileWithHead');
+    Logger.debug(t('extension.commandRegistered') + ': extension.compareFileWithHead');
 
     // 注册命令：比较文件夹
     Logger.debug('注册命令: extension.compareFolderWithHead');
@@ -45,11 +46,11 @@ export function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           Logger.error('执行比较文件夹命令失败:', errorMessage);
-          vscode.window.showErrorMessage(`执行命令失败: ${errorMessage}`);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
         }
       }
     );
-    Logger.debug('✓ 命令已注册: extension.compareFolderWithHead');
+    Logger.debug(t('extension.commandRegistered') + ': extension.compareFolderWithHead');
 
     // 注册命令：显示日志文件
     Logger.debug('注册命令: extension.showLogFile');
@@ -74,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
     // 监听配置变化
     const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('beyondCompare')) {
-        Logger.info('配置已更新');
+        Logger.info(t('config.updated'));
         Logger.updateLogLevel();
       }
     });
@@ -88,8 +89,8 @@ export function activate(context: vscode.ExtensionContext) {
       configWatcher
     );
 
-    Logger.info('✓ 所有命令已注册完成');
-    Logger.info('=== Beyond Compare Git 扩展激活完成 ===');
+    Logger.info(t('extension.allCommandsRegistered'));
+    Logger.info(t('extension.activated'));
     
     // 异步验证命令（不阻塞激活）
     setImmediate(() => {
@@ -117,7 +118,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (stack) {
       Logger.error('错误堆栈:', stack);
     }
-    vscode.window.showErrorMessage(`Beyond Compare Git 扩展激活失败: ${errorMessage}`);
+    vscode.window.showErrorMessage(`${t('extension.activationFailed')}: ${errorMessage}`);
     // 不要抛出错误，让扩展继续尝试激活
   }
 }
@@ -126,11 +127,11 @@ export function activate(context: vscode.ExtensionContext) {
  * 扩展停用时调用
  */
 export async function deactivate() {
-  Logger.info('Beyond Compare Git 扩展正在停用...');
+  Logger.info(t('extension.deactivating'));
   
   // 清理所有临时文件
   await TempFileManager.cleanupAll();
   
-  Logger.info('Beyond Compare Git 扩展已停用');
+  Logger.info(t('extension.deactivated'));
 }
 

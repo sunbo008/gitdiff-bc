@@ -19,4 +19,7 @@ Thumbs.db
 *.tmp
 *.temp
 
+# VS Code 扩展打包文件
+*.vsix
+
 

@@ -8,6 +8,28 @@ echo "Git Archive 测试脚本"
 echo "================================================"
 echo ""
 
+# 检测操作系统
+detect_os() {
+    case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*)
+            echo "windows"
+            ;;
+        Darwin*)
+            echo "macos"
+            ;;
+        Linux*)
+            echo "linux"
+            ;;
+        *)
+            echo "unknown"
+            ;;
+    esac
+}
+
+OS_TYPE=$(detect_os)
+echo "🖥️  操作系统: $OS_TYPE"
+echo ""
+
 # 检查是否在 Git 仓库中
 if [ ! -d ".git" ]; then
     echo "❌ 错误：当前目录不是 Git 仓库"
@@ -25,7 +47,15 @@ echo ""
 
 # 测试导出整个仓库
 echo "🧪 测试 1: 导出整个仓库"
-TEMP_DIR="/tmp/git-archive-test-full-$$"
+
+# 根据操作系统设置临时目录
+if [ "$OS_TYPE" = "windows" ]; then
+    TEMP_BASE="${TEMP:-/tmp}"
+else
+    TEMP_BASE="${TMPDIR:-/tmp}"
+fi
+
+TEMP_DIR="$TEMP_BASE/git-archive-test-full-$$"
 mkdir -p "$TEMP_DIR"
 
 if git archive HEAD | tar -x -C "$TEMP_DIR" 2>&1; then
@@ -41,7 +71,7 @@ echo ""
 
 # 测试导出特定文件夹
 echo "🧪 测试 2: 导出 cxx 文件夹"
-TEMP_DIR2="/tmp/git-archive-test-cxx-$$"
+TEMP_DIR2="$TEMP_BASE/git-archive-test-cxx-$$"
 mkdir -p "$TEMP_DIR2"
 
 if git archive HEAD -- "cxx" | tar -x -C "$TEMP_DIR2" 2>&1; then
@@ -69,7 +99,7 @@ echo ""
 
 # 测试导出 docs 文件夹
 echo "🧪 测试 3: 导出 docs 文件夹"
-TEMP_DIR3="/tmp/git-archive-test-docs-$$"
+TEMP_DIR3="$TEMP_BASE/git-archive-test-docs-$$"
 mkdir -p "$TEMP_DIR3"
 
 if git archive HEAD -- "docs" | tar -x -C "$TEMP_DIR3" 2>&1; then

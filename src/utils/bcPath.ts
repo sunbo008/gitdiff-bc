@@ -118,12 +118,12 @@ export class BeyondComparePath {
    * 启动 Beyond Compare 进行比较
    * @param leftPath 左侧路径（通常是临时文件/目录）
    * @param rightPath 右侧路径（工作区文件/目录）
-   * @param onClose 关闭时的回调函数
+   * @param onClose 关闭时的回调函数（异步）
    */
   static async launchCompare(
     leftPath: string, 
     rightPath: string,
-    onClose?: () => void
+    onClose?: () => Promise<void>
   ): Promise<void> {
     const bcInfo = await this.findBeyondCompare();
 
@@ -170,14 +170,23 @@ export class BeyondComparePath {
       });
       
       // 监听进程退出，执行清理回调
-      child.on('exit', (code: number | null, signal: string | null) => {
+      child.on('exit', async (code: number | null, signal: string | null) => {
         Logger.info(`Beyond Compare 进程已退出 (代码: ${code}, 信号: ${signal})`);
         
         // 执行清理回调
         if (onClose) {
           Logger.debug('执行关闭后清理...');
+          
+          // 在 Windows 下，Beyond Compare 可能需要一些时间释放文件锁
+          // 等待一小段时间后再清理
+          if (process.platform === 'win32') {
+            Logger.debug('等待文件锁释放...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          
           try {
-            onClose();
+            await onClose();
+            Logger.info('✓ 清理完成');
           } catch (error) {
             Logger.error('清理回调执行失败:', error);
           }

@@ -7,6 +7,7 @@ import { GitOperations } from '../utils/gitOps';
 import { TempFileManager } from '../utils/tempFile';
 import { BeyondComparePath } from '../utils/bcPath';
 import { Logger } from '../utils/logger';
+import { t } from '../utils/i18n';
 
 const execAsync = promisify(exec);
 
@@ -14,7 +15,7 @@ const execAsync = promisify(exec);
  * 比较文件夹与 Git HEAD 命令
  */
 export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
-  Logger.info('执行命令: Compare Folder with Git HEAD');
+  Logger.info(t('command.executing') + ': ' + t('command.compareFolderWithHead'));
   Logger.debug('文件夹路径:', uri.fsPath);
 
   let tempDirPath: string | null = null;
@@ -24,15 +25,15 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: '正在准备文件夹比较...',
+        title: t('progress.preparing'),
         cancellable: false
       },
       async (progress) => {
         // 1. 检查是否在 Git 仓库中
-        progress.report({ message: '检查 Git 仓库...' });
+        progress.report({ message: t('progress.checkingRepo') });
         const isInRepo = await GitOperations.isInGitRepo(uri.fsPath);
         if (!isInRepo) {
-          throw new Error('当前文件夹不在 Git 仓库中。');
+          throw new Error(t('error.notInGitRepo'));
         }
 
         // 2. 获取 Git 仓库根目录
@@ -47,11 +48,11 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
         Logger.debug(`准备比较文件夹: ${normalizedPath || '(根目录)'}`);
 
         // 3. 创建临时目录
-        progress.report({ message: '创建临时目录...' });
+        progress.report({ message: t('progress.creatingTempFile') });
         tempDirPath = await TempFileManager.createTempDir('folder-compare');
         
         // 4. 导出 HEAD 版本到临时目录
-        progress.report({ message: '导出 Git HEAD 版本...' });
+        progress.report({ message: t('progress.gettingHeadVersion') });
         
         Logger.debug(`仓库根目录: ${repoRoot}`);
         Logger.debug(`相对路径: ${normalizedPath || '(根目录)'}`);
@@ -62,16 +63,41 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
           // 如果是子文件夹，需要指定路径；如果是根目录，不指定路径
           const pathArg = normalizedPath ? `-- "${normalizedPath}"` : '';
           
-          // git archive 会保持原始目录结构，所以我们直接解压到临时目录
-          const archiveCmd = `git archive HEAD ${pathArg} | tar -x -C "${tempDirPath}"`;
+          // 根据操作系统选择不同的命令
+          const isWindows = process.platform === 'win32';
+          let archiveCmd: string;
+          let execOptions: any;
+          
+          if (isWindows) {
+            // Windows: 将路径转换为 Git Bash 风格（正斜杠）
+            // 例如: C:\Users\... -> /c/Users/...
+            const tempDirPathUnix = tempDirPath
+              .replace(/\\/g, '/')  // 反斜杠转为正斜杠
+              .replace(/^([A-Z]):/, (_, drive) => `/${drive.toLowerCase()}`);  // C: -> /c
+            
+            archiveCmd = `git archive HEAD ${pathArg} | tar -x -C "${tempDirPathUnix}"`;
+            
+            // 在 Windows 上，需要使用 bash 来执行管道命令
+            // Git for Windows 会将 bash 添加到 PATH 中
+            execOptions = {
+              cwd: repoRoot,
+              shell: 'bash',  // 使用 bash（不指定完整路径，让系统从 PATH 中查找）
+              maxBuffer: 50 * 1024 * 1024 // 50MB
+            };
+          } else {
+            // Unix/Linux/macOS
+            archiveCmd = `git archive HEAD ${pathArg} | tar -x -C "${tempDirPath}"`;
+            execOptions = {
+              cwd: repoRoot,
+              maxBuffer: 50 * 1024 * 1024 // 50MB
+            };
+          }
           
           Logger.debug(`执行命令: ${archiveCmd}`);
+          Logger.debug(`操作系统: ${process.platform}`);
+          Logger.debug(`工作目录: ${repoRoot}`);
           
-          const { stdout, stderr } = await execAsync(archiveCmd, {
-            cwd: repoRoot,
-            shell: '/bin/bash',
-            maxBuffer: 50 * 1024 * 1024 // 50MB
-          });
+          const { stdout, stderr } = await execAsync(archiveCmd, execOptions);
           
           if (stderr) {
             Logger.warn('git archive 警告:', stderr);
@@ -80,8 +106,12 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
           Logger.info('Git HEAD 版本导出成功');
           
           // 列出临时目录内容用于调试
-          const lsResult = await execAsync(`ls -la "${tempDirPath}"`, { shell: '/bin/bash' });
-          Logger.debug('临时目录内容:', lsResult.stdout);
+          try {
+            const files = await fs.promises.readdir(tempDirPath);
+            Logger.debug('临时目录内容:', JSON.stringify(files));
+          } catch (e) {
+            Logger.debug('无法列出临时目录内容');
+          }
           
         } catch (error: any) {
           Logger.error('导出 Git HEAD 版本失败:', error);
@@ -122,7 +152,7 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
         }
 
         // 6. 启动 Beyond Compare
-        progress.report({ message: '启动 Beyond Compare...' });
+        progress.report({ message: t('progress.launchingBC') });
         
         // 确保路径存在且可访问
         try {
@@ -139,22 +169,22 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
         
         // 启动 BC 并在关闭时自动清理临时目录
         await BeyondComparePath.launchCompare(headFolderPath, uri.fsPath, async () => {
-          Logger.info('Beyond Compare 已关闭，清理临时目录...');
+          Logger.info(t('success.bcClosed'));
           if (tempDirPath) {
             await TempFileManager.cleanupTempDir(tempDirPath);
           }
         });
 
-        Logger.info('文件夹比较完成 - Beyond Compare 已启动');
+        Logger.info(t('success.compareCompleted'));
       }
     );
 
-    vscode.window.showInformationMessage('Beyond Compare 已启动');
+    vscode.window.showInformationMessage(t('success.bcLaunched'));
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    Logger.error('比较文件夹失败:', errorMessage);
-    vscode.window.showErrorMessage(`比较文件夹失败: ${errorMessage}`);
+    Logger.error(t('error.folderCompareFailed') + ':', errorMessage);
+    vscode.window.showErrorMessage(`${t('error.folderCompareFailed')}: ${errorMessage}`);
 
     // 即使失败，临时目录也会在1小时后自动清理
   }

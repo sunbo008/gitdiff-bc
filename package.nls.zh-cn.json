@@ -1,0 +1,18 @@
+{
+  "displayName": "GitDiff BC - Beyond Compare Git 对比工具",
+  "description": "使用 Beyond Compare 快速比较文件/文件夹与 Git 历史版本",
+  
+  "command.compareFileWithHead": "与 Git HEAD 比较文件",
+  "command.compareFolderWithHead": "与 Git HEAD 比较文件夹",
+  "command.showLogFile": "Beyond Compare Git: 显示日志文件",
+  "command.openLogDirectory": "Beyond Compare Git: 打开日志目录",
+  
+  "configuration.title": "Beyond Compare Git",
+  "configuration.executablePath.description": "Beyond Compare 可执行文件的自定义路径。留空则自动检测。\n\n**示例**:\n- Windows: `C:\\Program Files\\Beyond Compare 4\\BCompare.exe`\n- macOS: `/Applications/Beyond Compare.app/Contents/MacOS/bcomp`\n- Linux: `/usr/bin/bcompare`",
+  "configuration.logLevel.description": "日志输出级别。查看日志：打开输出面板选择 **Beyond Compare Git** 频道。\n\n- `error`: 仅错误\n- `warn`: 警告和错误\n- `info`: 一般信息（推荐）\n- `debug`: 详细调试信息"
+}
+
+
+
+
+

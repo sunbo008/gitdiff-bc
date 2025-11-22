@@ -170,17 +170,39 @@ export class TempFileManager {
   }
   
   /**
-   * 清理临时目录
+   * 清理临时目录（带重试机制）
    */
   static async cleanupTempDir(dirPath: string): Promise<void> {
     Logger.debug('清理临时目录:', dirPath);
 
-    try {
-      await fs.promises.rm(dirPath, { recursive: true, force: true });
-      Logger.info('✓ 临时目录清理成功:', dirPath);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      Logger.warn('清理临时目录失败:', errorMessage);
+    // 尝试清理，最多重试3次
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1秒
+    
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        // 检查目录是否存在
+        if (!fs.existsSync(dirPath)) {
+          Logger.debug('临时目录已不存在:', dirPath);
+          return;
+        }
+        
+        await fs.promises.rm(dirPath, { recursive: true, force: true });
+        Logger.info('✓ 临时目录清理成功:', dirPath);
+        return;
+      } catch (error: any) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        // 如果是最后一次尝试，记录警告
+        if (i === maxRetries - 1) {
+          Logger.warn(`清理临时目录失败（已重试${maxRetries}次）:`, errorMessage);
+          Logger.warn('该目录将在下次启动时自动清理（1小时后）');
+        } else {
+          // 如果不是最后一次，等待后重试
+          Logger.debug(`清理失败，${retryDelay}ms 后重试 (${i + 1}/${maxRetries}):`, errorMessage);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
     }
   }
 }

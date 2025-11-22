@@ -10,6 +10,7 @@
 🌍 **跨平台支持** - 完美支持 Windows、macOS 和 Linux  
 🎯 **自动检测** - 自动检测 Beyond Compare 安装路径  
 ⚙️ **灵活配置** - 支持自定义 Beyond Compare 路径和日志级别  
+🌐 **多语言支持** - 支持中英文界面，自动适配 VSCode 语言设置  
 
 ## 兼容性
 
@@ -112,6 +113,7 @@ git init
 ### 用户文档
 - 📖 [快速开始指南](docs/user/QUICKSTART.md) - 5分钟上手教程
 - 📥 [安装指南](docs/user/INSTALL_GUIDE.md) - 详细的安装步骤
+- 🌐 [国际化指南](docs/user/I18N_GUIDE.md) - 多语言支持说明
 - 🔧 [故障排查](docs/user/TROUBLESHOOTING.md) - 常见问题解决方案
 
 ### 开发者文档

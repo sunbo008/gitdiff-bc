@@ -1,9 +1,10 @@
 {
   "name": "gitdiff-bc",
-  "displayName": "GitDiff BC - Beyond Compare Git 对比工具",
-  "description": "使用 Beyond Compare 快速比较文件/文件夹与 Git 历史版本",
+  "displayName": "%displayName%",
+  "description": "%description%",
   "version": "0.1.0",
-  "publisher": "your-publisher-name",
+  "publisher": "sunbo008",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.60.0"
   },
@@ -25,19 +26,19 @@
     "commands": [
       {
         "command": "extension.compareFileWithHead",
-        "title": "Compare File with Git HEAD"
+        "title": "%command.compareFileWithHead%"
       },
       {
         "command": "extension.compareFolderWithHead",
-        "title": "Compare Folder with Git HEAD"
+        "title": "%command.compareFolderWithHead%"
       },
       {
         "command": "extension.showLogFile",
-        "title": "Beyond Compare Git: 显示日志文件"
+        "title": "%command.showLogFile%"
       },
       {
         "command": "extension.openLogDirectory",
-        "title": "Beyond Compare Git: 打开日志目录"
+        "title": "%command.openLogDirectory%"
       }
     ],
     "menus": {
@@ -55,12 +56,12 @@
       ]
     },
     "configuration": {
-      "title": "Beyond Compare Git",
+      "title": "%configuration.title%",
       "properties": {
         "beyondCompare.executablePath": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Beyond Compare 可执行文件的自定义路径。留空则自动检测。\n\n**示例**:\n- Windows: `C:\\Program Files\\Beyond Compare 4\\BCompare.exe`\n- macOS: `/Applications/Beyond Compare.app/Contents/MacOS/bcomp`\n- Linux: `/usr/bin/bcompare`",
+          "markdownDescription": "%configuration.executablePath.description%",
           "scope": "window",
           "order": 1
         },
@@ -73,7 +74,7 @@
             "debug"
           ],
           "default": "info",
-          "markdownDescription": "日志输出级别。查看日志：打开输出面板选择 **Beyond Compare Git** 频道。\n\n- `error`: 仅错误\n- `warn`: 警告和错误\n- `info`: 一般信息（推荐）\n- `debug`: 详细调试信息",
+          "markdownDescription": "%configuration.logLevel.description%",
           "scope": "window",
           "order": 2
         }
@@ -87,7 +88,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "package": "mkdir -p dist && vsce package --out dist/"
+    "package": "vsce package --out dist/"
   },
   "devDependencies": {
     "@types/vscode": "^1.60.0",
