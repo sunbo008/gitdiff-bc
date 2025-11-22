@@ -55,5 +55,5 @@
 - [x] 8.1 配置 .vscodeignore 文件
 - [x] 8.2 更新版本号和 changelog
 - [x] 8.3 生成 .vsix 包并本地测试
-- [ ] 8.4 发布到 VSCode Marketplace（需要用户创建发布者账号）
+- [x] 8.4 发布到 VSCode Marketplace（已完成，扩展 ID: sunbo008.gitdiff-bc）
 

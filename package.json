@@ -80,7 +80,11 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "package": "vsce package --out dist/"
+    "package": "vsce package --out dist/",
+    "check": "node scripts/pre-publish-check.js",
+    "publish:patch": "npm run check && vsce publish patch",
+    "publish:minor": "npm run check && vsce publish minor",
+    "publish:major": "npm run check && vsce publish major"
   },
   "devDependencies": {
     "@types/vscode": "^1.60.0",

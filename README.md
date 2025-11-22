@@ -40,9 +40,15 @@
 
 ### 比较文件夹
 
-1. 在资源管理器中右键点击文件夹
+**方式 1：右键点击文件夹**
+1. 在资源管理器中右键点击要比较的文件夹
 2. 选择 **"Compare Folder with Git HEAD"**
-3. Beyond Compare 会打开文件夹比较视图
+3. Beyond Compare 会打开该文件夹与 Git HEAD 版本的比较视图
+
+**方式 2：比较整个工作区（快捷方式）**
+1. 在资源管理器空白区域右键点击
+2. 选择 **"Compare Folder with Git HEAD"**
+3. Beyond Compare 会打开整个工作区根目录与 Git HEAD 版本的比较视图
 
 ## 配置
 
@@ -122,6 +128,8 @@ git init
 ### 开发者文档
 - 🏗️ [构建指南](docs/developer/BUILD_GUIDE.md) - 构建和打包流程
 - 🛠️ [脚本使用说明](scripts/USAGE.md) - 开发和调试工具
+- 🚀 [发布指南](docs/PUBLISH.md) - VSCode Marketplace 发布详细文档
+- ⚡ [快速发布](PUBLISH_QUICKSTART.md) - 一页纸快速发布指南
 
 ### 维护文档
 - 🔄 [重新安装指南](docs/maintenance/REINSTALL.md) - 完全重新安装步骤

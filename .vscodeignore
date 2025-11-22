@@ -1,0 +1,40 @@
+# 源代码（编译后的代码在 out/ 目录）
+src/**
+*.ts
+tsconfig.json
+
+# 开发配置
+.vscode/**
+.vscode-test/**
+.cursor/**
+
+# 构建和依赖
+node_modules/**
+.git/**
+.gitignore
+
+# 测试
+out/test/**
+test/**
+**/*.test.js
+
+# OpenSpec（项目管理工具，不需要打包）
+openspec/**
+
+# 文档和脚本（核心文档除外）
+docs/**
+scripts/**
+*.md
+!README.md
+!CHANGELOG.md
+
+# 其他开发文件
+.eslintrc.json
+.prettierrc
+**/.DS_Store
+**/*.map
+
+# 打包输出
+dist/**
+*.vsix
+

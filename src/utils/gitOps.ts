@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { Logger } from './logger';
@@ -15,7 +16,16 @@ export class GitOperations {
    */
   static async isInGitRepo(filePath: string): Promise<boolean> {
     try {
-      const dirPath = path.dirname(filePath);
+      // 使用 fs.statSync 判断是文件还是目录
+      let dirPath: string;
+      try {
+        const stat = fs.statSync(filePath);
+        dirPath = stat.isDirectory() ? filePath : path.dirname(filePath);
+      } catch {
+        // 如果文件不存在，使用父目录
+        dirPath = path.dirname(filePath);
+      }
+      
       const { stdout } = await execAsync('git rev-parse --is-inside-work-tree', { 
         cwd: dirPath,
         encoding: 'utf8'
@@ -151,7 +161,16 @@ export class GitOperations {
    */
   static async getRepoRoot(filePath: string): Promise<string> {
     try {
-      const dirPath = path.dirname(filePath);
+      // 使用 fs.statSync 判断是文件还是目录
+      let dirPath: string;
+      try {
+        const stat = fs.statSync(filePath);
+        dirPath = stat.isDirectory() ? filePath : path.dirname(filePath);
+      } catch {
+        // 如果文件不存在，使用父目录
+        dirPath = path.dirname(filePath);
+      }
+      
       const { stdout } = await execAsync('git rev-parse --show-toplevel', {
         cwd: dirPath,
         encoding: 'utf8'

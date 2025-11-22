@@ -13,9 +13,31 @@ const execAsync = promisify(exec);
 
 /**
  * 比较文件夹与 Git HEAD 命令
+ * @param uri 文件夹路径，如果为空则使用工作区根目录
  */
-export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
+export async function compareFolderWithHead(uri?: vscode.Uri): Promise<void> {
   Logger.info(t('command.executing') + ': ' + t('command.compareFolderWithHead'));
+  
+  // 处理 uri 为空的情况（在空白区域右键触发）
+  if (!uri) {
+    Logger.debug('未提供 uri，尝试使用工作区根目录');
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      const errorMsg = '没有打开的工作区';
+      Logger.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    // 使用第一个工作区根目录
+    uri = workspaceFolders[0].uri;
+    Logger.info(`使用工作区根目录: ${uri.fsPath}`);
+    
+    if (workspaceFolders.length > 1) {
+      Logger.info(`检测到多个工作区 (${workspaceFolders.length} 个)，使用第一个工作区`);
+    }
+  }
+  
   Logger.debug('文件夹路径:', uri.fsPath);
 
   let tempDirPath: string | null = null;
@@ -47,11 +69,39 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
         
         Logger.debug(`准备比较文件夹: ${normalizedPath || '(根目录)'}`);
 
-        // 3. 创建临时目录
+        // 3. 检查文件夹是否在 Git 版本控制中
+        if (normalizedPath) {
+          // 对于非根目录，检查该路径是否存在于 Git HEAD 中
+          try {
+            const checkCmd = `git ls-tree -d HEAD "${normalizedPath}"`;
+            Logger.debug(`检查文件夹是否在 Git 中: ${checkCmd}`);
+            const { stdout } = await execAsync(checkCmd, {
+              cwd: repoRoot,
+              encoding: 'utf8'
+            });
+            
+            if (!stdout.trim()) {
+              // 文件夹不在 Git HEAD 中
+              Logger.warn(`文件夹不在 Git 版本控制中: ${normalizedPath}`);
+              throw new Error('文件夹未纳入 Git 版本控制，无法比较。请先提交该文件夹。');
+            }
+            Logger.debug(`文件夹在 Git 中: ${stdout.trim()}`);
+          } catch (error: any) {
+            // 如果是我们自己抛出的错误，直接抛出
+            if (error.message.includes('未纳入 Git 版本控制')) {
+              throw error;
+            }
+            // 其他错误（如 git 命令失败）也视为文件夹不在 Git 中
+            Logger.warn(`检查文件夹失败: ${error.message}`);
+            throw new Error('文件夹未纳入 Git 版本控制，无法比较。请先提交该文件夹。');
+          }
+        }
+
+        // 4. 创建临时目录
         progress.report({ message: t('progress.creatingTempFile') });
         tempDirPath = await TempFileManager.createTempDir('folder-compare');
         
-        // 4. 导出 HEAD 版本到临时目录
+        // 5. 导出 HEAD 版本到临时目录
         progress.report({ message: t('progress.gettingHeadVersion') });
         
         Logger.debug(`仓库根目录: ${repoRoot}`);
@@ -120,7 +170,7 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
           throw new Error(`导出 Git HEAD 版本失败: ${error.message}`);
         }
 
-        // 5. 确定比较路径
+        // 6. 确定比较路径
         // git archive 会保持目录结构，所以临时目录中会有完整的路径
         const headFolderPath = normalizedPath 
           ? path.join(tempDirPath, normalizedPath)
@@ -151,7 +201,7 @@ export async function compareFolderWithHead(uri: vscode.Uri): Promise<void> {
           throw new Error('HEAD 版本目录为空');
         }
 
-        // 6. 启动 Beyond Compare
+        // 7. 启动 Beyond Compare
         progress.report({ message: t('progress.launchingBC') });
         
         // 确保路径存在且可访问
