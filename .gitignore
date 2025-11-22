@@ -1,0 +1,22 @@
+# 编译输出
+out/
+
+# 依赖
+node_modules/
+
+# 日志
+*.log
+
+# OS 文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode-test/
+.vscode/.ropeproject
+
+# 临时文件
+*.tmp
+*.temp
+
+
