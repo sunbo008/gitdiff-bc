@@ -127,11 +127,29 @@ export async function compareFolderWithHead(uri?: vscode.Uri): Promise<void> {
             
             archiveCmd = `git archive HEAD ${pathArg} | tar -x -C "${tempDirPathUnix}"`;
             
-            // 在 Windows 上，需要使用 bash 来执行管道命令
-            // Git for Windows 会将 bash 添加到 PATH 中
+            // 在 Windows 上，需要使用 Git Bash 来执行管道命令
+            // 从 Git 路径推断 Git Bash 路径，避免使用 WSL 的 bash
+            let gitBashPath = 'C:\\Program Files\\Git\\usr\\bin\\bash.exe'; // 默认路径
+            
+            try {
+              // 尝试从 git 路径推断 Git Bash 路径
+              const { stdout: gitPath } = await execAsync('where git', { encoding: 'utf8' });
+              const firstGitPath = gitPath.split('\n')[0].trim();
+              
+              // Git 路径示例: C:\Program Files\Git\mingw64\bin\git.exe
+              // Git Bash 路径: C:\Program Files\Git\usr\bin\bash.exe
+              if (firstGitPath.includes('\\Git\\')) {
+                const gitRoot = firstGitPath.split('\\Git\\')[0] + '\\Git';
+                gitBashPath = path.join(gitRoot, 'usr', 'bin', 'bash.exe');
+                Logger.debug(`从 Git 路径推断的 Bash 路径: ${gitBashPath}`);
+              }
+            } catch (e) {
+              Logger.warn('无法推断 Git Bash 路径，使用默认路径');
+            }
+            
             execOptions = {
               cwd: repoRoot,
-              shell: 'bash',  // 使用 bash（不指定完整路径，让系统从 PATH 中查找）
+              shell: gitBashPath,  // 使用 Git Bash 的完整路径
               maxBuffer: 50 * 1024 * 1024 // 50MB
             };
           } else {
