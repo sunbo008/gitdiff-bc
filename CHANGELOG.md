@@ -7,13 +7,23 @@
 
 ## [未发布]
 
+### 新增
+- 初始版本开发中
+
+## [0.1.4] - 2025-11-23
+
+### 优化
+- 优化扩展市场元数据，提升可发现性
+  - 添加 "SCM Providers" 分类，更精确的分类定位
+  - 扩充关键词列表：gitdiff, gitdiff-bc, beyond-compare, bc, git diff, file compare, folder compare, version control 等
+  - 改进在 Cursor 和 VSCode 扩展商店的搜索匹配度
+
+## [0.1.3] - 2025-11-23
+
 ### 修复
 - 修复 Windows 上 WSL bash 冲突导致文件夹比较失败的问题
   - 现在明确使用 Git Bash 而不是 WSL bash 执行管道命令
   - 自动从 Git 安装路径推断 Git Bash 位置
-
-### 新增
-- 初始版本开发中
 
 ## [0.1.2] - 2025-11-22
 

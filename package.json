@@ -9,14 +9,25 @@
     "vscode": "^1.60.0"
   },
   "categories": [
+    "SCM Providers",
     "Other"
   ],
   "keywords": [
+    "gitdiff",
+    "gitdiff-bc",
     "beyond compare",
+    "beyond-compare",
+    "bc",
     "git",
     "diff",
     "compare",
-    "merge"
+    "merge",
+    "git diff",
+    "file compare",
+    "folder compare",
+    "version control",
+    "source control",
+    "scm"
   ],
   "activationEvents": [
     "onStartupFinished"
