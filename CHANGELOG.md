@@ -8,6 +8,11 @@
 ## [未发布]
 
 ### 新增
+- 待添加
+
+## [0.1.5] - 2025-11-23
+
+### 新增
 - 🚀 **GitHub Releases 自动发布**
   - 推送 `v*` 格式的 Git tag 自动触发 GitHub Actions 工作流
   - 自动编译、打包 VSIX 文件并上传到 GitHub Releases
