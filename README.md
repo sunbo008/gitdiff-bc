@@ -1,6 +1,7 @@
 # GitDiff BC - Beyond Compare Git 对比工具
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-gitdiff--bc-blue?logo=github)](https://github.com/sunbo008/gitdiff-bc)
+[![GitHub Release](https://img.shields.io/github/v/release/sunbo008/gitdiff-bc?logo=github)](https://github.com/sunbo008/gitdiff-bc/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 一个 VSCode / Cursor 扩展，使用 Beyond Compare 快速比较文件/文件夹与 Git 历史版本。
@@ -20,6 +21,54 @@
 - ✅ **VSCode** 1.60.0 或更高版本
 - ✅ **Cursor** 完全兼容（基于 VSCode 构建）
 - ✅ **Windows** / **macOS** / **Linux**
+
+## 安装
+
+### 📦 从 VSCode Marketplace 安装（推荐）
+
+1. 在 VSCode/Cursor 中打开扩展面板（`Ctrl+Shift+X` / `Cmd+Shift+X`）
+2. 搜索 **"GitDiff BC"** 或 **"Beyond Compare Git"**
+3. 点击**安装**按钮
+
+### 💾 离线安装（从 VSIX 文件）
+
+如果您在企业内网环境、离线环境，或需要安装特定历史版本，可以从 GitHub Releases 下载 VSIX 文件手动安装：
+
+#### 步骤 1: 下载 VSIX 文件
+
+访问 **[GitHub Releases](https://github.com/sunbo008/gitdiff-bc/releases)** 页面：
+
+1. 选择您需要的版本（建议下载最新版本）
+2. 在 **Assets** 区域找到 `gitdiff-bc-<版本号>.vsix` 文件
+3. 点击下载（例如：`gitdiff-bc-0.1.5.vsix`）
+
+#### 步骤 2: 安装 VSIX 文件
+
+**方法 1：通过 VSCode/Cursor UI 安装**
+
+1. 打开 VSCode/Cursor
+2. 打开扩展面板（`Ctrl+Shift+X` / `Cmd+Shift+X`）
+3. 点击扩展面板右上角的 `...` 菜单按钮
+4. 选择 **"从 VSIX 安装..."** (Install from VSIX...)
+5. 在文件选择对话框中找到下载的 `.vsix` 文件并选择
+6. 等待安装完成，重新加载窗口
+
+**方法 2：通过命令行安装**
+
+```bash
+# VSCode
+code --install-extension gitdiff-bc-0.1.5.vsix
+
+# Cursor（根据具体安装位置）
+cursor --install-extension gitdiff-bc-0.1.5.vsix
+```
+
+#### 适用场景
+
+- 🏢 **企业内网环境** - 无法访问 VSCode Marketplace
+- 🔒 **离线环境** - 没有互联网连接
+- 📌 **特定版本** - 需要安装或测试特定历史版本
+- 🚀 **批量部署** - 需要在多台机器上部署相同版本
 
 ## 前置要求
 

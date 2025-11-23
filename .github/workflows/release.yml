@@ -1,0 +1,71 @@
+name: Release to GitHub
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Compile TypeScript
+        run: npm run compile
+      
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+      
+      - name: Package extension
+        run: vsce package --out dist/
+      
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Extract changelog for version
+        id: changelog
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          
+          # 从 CHANGELOG.md 提取对应版本的内容
+          # 查找 ## [版本号] 到下一个 ## [版本号] 之间的内容
+          CHANGELOG=$(awk "/## \[$VERSION\]/,/## \[/{if(/## \[/ && !/## \[$VERSION\]/)exit;print}" CHANGELOG.md | sed '1d' | sed '/^$/d')
+          
+          # 如果提取失败，使用默认说明
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Release version $VERSION"
+          fi
+          
+          # 保存到文件，避免多行文本问题
+          echo "$CHANGELOG" > /tmp/release-notes.txt
+          
+          # 输出到 GitHub Actions
+          echo "notes_file=/tmp/release-notes.txt" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.version.outputs.VERSION }}
+          body_path: ${{ steps.changelog.outputs.notes_file }}
+          files: dist/*.vsix
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

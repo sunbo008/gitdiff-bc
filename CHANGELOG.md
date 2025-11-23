@@ -8,7 +8,21 @@
 ## [未发布]
 
 ### 新增
-- 初始版本开发中
+- 🚀 **GitHub Releases 自动发布**
+  - 推送 `v*` 格式的 Git tag 自动触发 GitHub Actions 工作流
+  - 自动编译、打包 VSIX 文件并上传到 GitHub Releases
+  - 从 CHANGELOG.md 自动提取版本说明作为 Release notes
+  - 为离线安装、企业内网环境提供便捷的 VSIX 下载途径
+- 📦 **离线安装文档**
+  - README 中添加完整的离线安装指南
+  - 提供 GitHub Releases 页面链接和下载说明
+  - 支持 UI 和命令行两种 VSIX 安装方式
+  - 说明离线安装的适用场景（企业内网、离线环境、特定版本、批量部署）
+- 📄 **发布流程文档更新**
+  - 完善双轨发布流程说明（GitHub Releases + VSCode Marketplace）
+  - 添加 Git tag 发布流程详细步骤
+  - 提供 GitHub Actions 故障排查指南
+  - 说明手动备用发布方案
 
 ## [0.1.4] - 2025-11-23
 
