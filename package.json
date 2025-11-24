@@ -2,7 +2,7 @@
   "name": "gitdiff-bc",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.1.5",
+  "version": "0.1.4",
   "publisher": "sunbo008",
   "icon": "icon.png",
   "engines": {
@@ -42,6 +42,26 @@
       {
         "command": "extension.compareFolderWithHead",
         "title": "%command.compareFolderWithHead%"
+      },
+      {
+        "command": "extension.compareSelectedFiles",
+        "title": "%command.compareSelectedFiles%"
+      },
+      {
+        "command": "extension.selectFirstFile",
+        "title": "%command.selectFirstFile%"
+      },
+      {
+        "command": "extension.compareWithSelectedFile",
+        "title": "%command.compareWithSelectedFile%"
+      },
+      {
+        "command": "extension.clearSelectedFile",
+        "title": "%command.clearSelectedFile%"
+      },
+      {
+        "command": "extension.compareFileFromTerminal",
+        "title": "%command.compareFileFromTerminal%"
       }
     ],
     "menus": {
@@ -55,6 +75,27 @@
           "command": "extension.compareFolderWithHead",
           "when": "explorerResourceIsFolder",
           "group": "compare"
+        },
+        {
+          "command": "extension.compareSelectedFiles",
+          "when": "!explorerResourceIsFolder && listMultiSelection",
+          "group": "compare"
+        },
+        {
+          "command": "extension.selectFirstFile",
+          "when": "!explorerResourceIsFolder && !listMultiSelection",
+          "group": "compare"
+        },
+        {
+          "command": "extension.compareWithSelectedFile",
+          "when": "!explorerResourceIsFolder && firstFileSelected",
+          "group": "compare"
+        }
+      ],
+      "terminal/context": [
+        {
+          "command": "extension.compareFileFromTerminal",
+          "group": "z_commands"
         }
       ]
     },

@@ -7,10 +7,26 @@ import { t } from '../utils/i18n';
 
 /**
  * 比较文件与 Git HEAD 命令
+ * @param uri 文件的 Uri 对象（从资源管理器或终端传入）
+ * @param filePath 可选的文件路径字符串（用于终端场景）
  */
-export async function compareFileWithHead(uri: vscode.Uri): Promise<void> {
+export async function compareFileWithHead(uri?: vscode.Uri, filePath?: string): Promise<void> {
   Logger.info(t('command.executing') + ': ' + t('command.compareFileWithHead'));
-  Logger.debug('文件路径:', uri.fsPath);
+  
+  // 如果提供了 filePath，从字符串构造 Uri
+  let fileUri: vscode.Uri;
+  if (filePath) {
+    fileUri = vscode.Uri.file(filePath);
+    Logger.debug('从路径字符串构造 Uri:', filePath);
+  } else if (uri) {
+    fileUri = uri;
+  } else {
+    const errorMsg = t('error.noFileProvided') || '未提供文件';
+    Logger.error('未提供文件 Uri 或路径');
+    throw new Error(errorMsg);
+  }
+  
+  Logger.debug('文件路径:', fileUri.fsPath);
 
   let tempFilePath: string | null = null;
 
@@ -25,31 +41,31 @@ export async function compareFileWithHead(uri: vscode.Uri): Promise<void> {
       async (progress) => {
         // 1. 检查是否在 Git 仓库中
         progress.report({ message: t('progress.checkingRepo') });
-        const isInRepo = await GitOperations.isInGitRepo(uri.fsPath);
+        const isInRepo = await GitOperations.isInGitRepo(fileUri.fsPath);
         if (!isInRepo) {
           throw new Error(t('error.notInGitRepo'));
         }
 
         // 2. 检查文件是否在版本控制中
         progress.report({ message: t('progress.checkingFileStatus') });
-        const isTracked = await GitOperations.isFileTracked(uri.fsPath);
+        const isTracked = await GitOperations.isFileTracked(fileUri.fsPath);
         if (!isTracked) {
           throw new Error(t('error.fileNotTracked'));
         }
 
         // 3. 获取 HEAD 版本的文件内容
         progress.report({ message: t('progress.gettingHeadVersion') });
-        const headContent = await GitOperations.getFileContentAtHead(uri.fsPath);
+        const headContent = await GitOperations.getFileContentAtHead(fileUri.fsPath);
 
         // 4. 创建临时文件
         progress.report({ message: t('progress.creatingTempFile') });
-        tempFilePath = await TempFileManager.createTempFile(uri.fsPath, headContent);
+        tempFilePath = await TempFileManager.createTempFile(fileUri.fsPath, headContent);
 
         // 5. 启动 Beyond Compare
         progress.report({ message: t('progress.launchingBC') });
         
         // 启动 BC 并在关闭时自动清理临时文件
-        await BeyondComparePath.launchCompare(tempFilePath, uri.fsPath, async () => {
+        await BeyondComparePath.launchCompare(tempFilePath, fileUri.fsPath, async () => {
           Logger.info(t('success.bcClosed'));
           if (tempFilePath) {
             await TempFileManager.cleanupTempFile(tempFilePath);

@@ -4,6 +4,11 @@
   
   "command.compareFileWithHead": "与 Git HEAD 比较文件",
   "command.compareFolderWithHead": "与 Git HEAD 比较文件夹",
+  "command.compareSelectedFiles": "比较选中的文件",
+  "command.selectFirstFile": "选择此文件进行比较",
+  "command.compareWithSelectedFile": "与已选文件比较",
+  "command.clearSelectedFile": "清除选中的文件",
+  "command.compareFileFromTerminal": "与 Git HEAD 比较文件",
   
   "configuration.title": "Beyond Compare Git",
   "configuration.executablePath.description": "Beyond Compare 可执行文件的自定义路径。留空则自动检测。\n\n**示例**:\n- Windows: `C:\\Program Files\\Beyond Compare 4\\BCompare.exe`\n- macOS: `/Applications/Beyond Compare.app/Contents/MacOS/bcomp`\n- Linux: `/usr/bin/bcompare`",

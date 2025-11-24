@@ -1,6 +1,14 @@
 import * as vscode from 'vscode';
 import { compareFileWithHead } from './commands/compareFile';
 import { compareFolderWithHead } from './commands/compareFolder';
+import { 
+  compareSelectedFiles, 
+  selectFirstFile, 
+  compareWithSelectedFile,
+  clearSelectedFile,
+  initializeStatusBar 
+} from './commands/compareTwoFiles';
+import { compareFileFromTerminal } from './commands/compareFileFromTerminal';
 import { Logger } from './utils/logger';
 import { TempFileManager } from './utils/tempFile';
 import { t } from './utils/i18n';
@@ -12,6 +20,9 @@ export function activate(context: vscode.ExtensionContext) {
   try {
     // 初始化日志记录器（必须最先执行）
     Logger.initialize(context);
+    
+    // 初始化状态栏
+    initializeStatusBar(context);
     
     Logger.info(t('extension.activating'));
     Logger.info(`扩展 ID: gitdiff-bc`);
@@ -52,6 +63,89 @@ export function activate(context: vscode.ExtensionContext) {
     );
     Logger.debug(t('extension.commandRegistered') + ': extension.compareFolderWithHead');
 
+    // 注册命令：比较选中的两个文件（方式1）
+    Logger.debug('注册命令: extension.compareSelectedFiles');
+    const compareSelectedFilesCommand = vscode.commands.registerCommand(
+      'extension.compareSelectedFiles',
+      async (uri: vscode.Uri, uris?: vscode.Uri[]) => {
+        try {
+          Logger.info(`执行命令: compareSelectedFiles, 选中文件数: ${uris?.length || 1}`);
+          await compareSelectedFiles(uri, uris);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          Logger.error('执行比较选中文件命令失败:', errorMessage);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
+        }
+      }
+    );
+    Logger.debug(t('extension.commandRegistered') + ': extension.compareSelectedFiles');
+
+    // 注册命令：选择第一个文件进行比较（方式2）
+    Logger.debug('注册命令: extension.selectFirstFile');
+    const selectFirstFileCommand = vscode.commands.registerCommand(
+      'extension.selectFirstFile',
+      async (uri: vscode.Uri) => {
+        try {
+          Logger.info(`执行命令: selectFirstFile, 文件: ${uri?.fsPath || '未提供'}`);
+          await selectFirstFile(uri);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          Logger.error('执行选择第一个文件命令失败:', errorMessage);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
+        }
+      }
+    );
+    Logger.debug(t('extension.commandRegistered') + ': extension.selectFirstFile');
+
+    // 注册命令：与已选文件比较（方式2）
+    Logger.debug('注册命令: extension.compareWithSelectedFile');
+    const compareWithSelectedFileCommand = vscode.commands.registerCommand(
+      'extension.compareWithSelectedFile',
+      async (uri: vscode.Uri) => {
+        try {
+          Logger.info(`执行命令: compareWithSelectedFile, 文件: ${uri?.fsPath || '未提供'}`);
+          await compareWithSelectedFile(uri);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          Logger.error('执行与已选文件比较命令失败:', errorMessage);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
+        }
+      }
+    );
+    Logger.debug(t('extension.commandRegistered') + ': extension.compareWithSelectedFile');
+
+    // 注册命令：清除选中的文件
+    Logger.debug('注册命令: extension.clearSelectedFile');
+    const clearSelectedFileCommand = vscode.commands.registerCommand(
+      'extension.clearSelectedFile',
+      async () => {
+        try {
+          Logger.info('执行命令: clearSelectedFile');
+          await clearSelectedFile();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          Logger.error('执行清除选中文件命令失败:', errorMessage);
+        }
+      }
+    );
+    Logger.debug(t('extension.commandRegistered') + ': extension.clearSelectedFile');
+
+    // 注册命令：从终端比较文件
+    Logger.debug('注册命令: extension.compareFileFromTerminal');
+    const compareFileFromTerminalCommand = vscode.commands.registerCommand(
+      'extension.compareFileFromTerminal',
+      async () => {
+        try {
+          Logger.info('执行命令: compareFileFromTerminal');
+          await compareFileFromTerminal();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          Logger.error('执行从终端比较文件命令失败:', errorMessage);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
+        }
+      }
+    );
+    Logger.debug(t('extension.commandRegistered') + ': extension.compareFileFromTerminal');
 
     // 监听配置变化
     const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
@@ -65,6 +159,11 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
       compareFileCommand,
       compareFolderCommand,
+      compareSelectedFilesCommand,
+      selectFirstFileCommand,
+      compareWithSelectedFileCommand,
+      clearSelectedFileCommand,
+      compareFileFromTerminalCommand,
       configWatcher
     );
 
