@@ -19,11 +19,13 @@ description: Archive a deployed OpenSpec change and update specs.
 2. Validate the change ID by running `openspec list` (or `openspec show <id>`) and stop if the change is missing, already archived, or otherwise not ready to archive.
 3. **Check for duplicate archives**: Before archiving, check if an archive version already exists in `changes/archive/*-<change-id>/`. If found, compare the contents (especially proposal.md) to determine if this is a duplicate. If identical, inform the user and skip archiving.
 4. Run `openspec archive <id> --yes` so the CLI moves the change and applies spec updates without prompts (use `--skip-specs` only for tooling-only work).
-5. **Verify archive completion**: After the archive command:
-   - Confirm that `changes/<change-id>/` no longer exists (should be moved)
-   - Confirm that `changes/archive/<date>-<change-id>/` exists (should be created)
-   - If the source directory still exists, the archive likely failed due to spec conflicts (e.g., "already exists" error)
-6. **Handle archive failures gracefully**: If archive fails with "already exists" error:
+5. **Verify and Cleanup**: After the archive command:
+   - **Verify Archive**: Confirm `changes/archive/<date>-<change-id>/` exists and contains `proposal.md`.
+   - **Check Source**: Check if `changes/<change-id>/` still exists.
+   - **Cleanup Residue**: If the archive command succeeded (Exit 0) and the archive is verified, but the source directory remains (e.g., due to `.DS_Store`, file locks, or external drive latency), attempt to delete it manually: `rm -rf openspec/changes/<change-id>`.
+   - If manual deletion fails, explicitly warn the user that residue remains.
+   - If the source directory exists and the command failed, proceed to the next step.
+6. **Handle archive failures**: If archive fails with "already exists" error:
    - Check if the requirement is already in the target spec
    - If yes, this indicates the change was previously archived
    - Offer to manually delete the duplicate: `rmdir /s /q openspec\changes\<change-id>`
