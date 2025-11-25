@@ -9,6 +9,9 @@
   "command.compareWithSelectedFile": "Compare with Selected File",
   "command.clearSelectedFile": "Clear Selected File",
   "command.compareFileFromTerminal": "Compare File with Git HEAD",
+  "command.revertFileToHead": "Revert File to HEAD",
+  "command.revertFolderToHead": "Revert Folder to HEAD",
+  "command.revertFileFromTerminal": "Revert File to HEAD",
   
   "configuration.title": "Beyond Compare Git",
   "configuration.executablePath.description": "Custom path to Beyond Compare executable. Leave empty for auto-detection.\n\n**Examples**:\n- Windows: `C:\\Program Files\\Beyond Compare 4\\BCompare.exe`\n- macOS: `/Applications/Beyond Compare.app/Contents/MacOS/bcomp`\n- Linux: `/usr/bin/bcompare`",

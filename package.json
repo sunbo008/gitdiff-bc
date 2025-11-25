@@ -62,6 +62,18 @@
       {
         "command": "extension.compareFileFromTerminal",
         "title": "%command.compareFileFromTerminal%"
+      },
+      {
+        "command": "extension.revertFileToHead",
+        "title": "%command.revertFileToHead%"
+      },
+      {
+        "command": "extension.revertFolderToHead",
+        "title": "%command.revertFolderToHead%"
+      },
+      {
+        "command": "extension.revertFileFromTerminal",
+        "title": "%command.revertFileFromTerminal%"
       }
     ],
     "menus": {
@@ -90,11 +102,25 @@
           "command": "extension.compareWithSelectedFile",
           "when": "!explorerResourceIsFolder && firstFileSelected",
           "group": "compare"
+        },
+        {
+          "command": "extension.revertFileToHead",
+          "when": "!explorerResourceIsFolder",
+          "group": "compare"
+        },
+        {
+          "command": "extension.revertFolderToHead",
+          "when": "explorerResourceIsFolder",
+          "group": "compare"
         }
       ],
       "terminal/context": [
         {
           "command": "extension.compareFileFromTerminal",
+          "group": "z_commands"
+        },
+        {
+          "command": "extension.revertFileFromTerminal",
           "group": "z_commands"
         }
       ]

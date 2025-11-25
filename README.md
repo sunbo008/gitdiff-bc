@@ -8,10 +8,12 @@
 
 ## 功能特性
 
-✨ **右键菜单集成** - 在资源管理器中右键即可快速比较
+✨ **右键菜单集成** - 在资源管理器和终端中右键即可快速操作
 🔍 **文件比较** - 比较单个文件与 Git HEAD 版本
 📁 **文件夹比较** - 比较整个文件夹与 Git HEAD 版本
 🆕 **任意两个文件比较** - 选择工作区中的任意两个文件进行比较
+↩️ **Git Revert** - 快速撤销文件/文件夹的修改,恢复到 HEAD 版本
+🖥️ **终端集成** - 支持从终端右键菜单比较和撤销文件
 🌍 **跨平台支持** - 完美支持 Windows、macOS 和 Linux
 🎯 **自动检测** - 自动检测 Beyond Compare 安装路径
 ⚙️ **灵活配置** - 支持自定义 Beyond Compare 路径和日志级别
@@ -152,12 +154,41 @@ cursor --install-extension gitdiff-bc-0.1.5.vsix
 - `src/file.ts` - 纯路径
 - `src/file with spaces.ts` - 包含空格的路径
 
-> ⚠️ **Windows 用户注意**: 如果在终端右键时触发粘贴而非显示菜单，请调整以下设置：
+> ⚠️ **Windows 用户注意**: 
+- 需要框选文件路径
+- 如果在终端右键时触发粘贴而非显示菜单，请调整以下设置：
 >
 > 1. 打开设置（`Ctrl+,`）
 > 2. 搜索 `terminal.integrated.rightClickBehavior`
 > 3. 将其设置为 `"default"` 或 `"selectWord"`
    ![rightClickBehavior](docs/images/usage/windows-rightClickBehavior.png)
+
+### 撤销文件修改（Git Revert）🆕
+
+**从资源管理器撤销文件：**
+
+1. 在资源管理器中右键点击已修改的文件
+2. 选择 **"撤销对文件的修改"** (Revert File to HEAD)
+3. 在确认对话框中点击**确认**
+4. 文件会恢复到 Git HEAD 版本（放弃所有未提交的修改）
+
+**从资源管理器撤销文件夹：**
+
+1. 在资源管理器中右键点击文件夹
+2. 选择 **"撤销对文件夹的修改"** (Revert Folder to HEAD)
+3. 确认对话框会显示将要撤销的文件数量
+4. 点击**确认**后，文件夹中所有修改的文件会恢复到 HEAD 版本
+
+**从终端撤销文件：**
+
+1. 在终端运行 `git status` 查看修改的文件
+2. 用鼠标**选中**文件路径
+3. 在终端右键，选择 **"撤销文件修改"** (Revert File to HEAD)
+4. 确认后文件会恢复到 HEAD 版本
+
+> ⚠️ **警告**: Git Revert 操作会**永久丢失**所有未提交的修改，操作无法撤销！使用前请确保不需要保留当前的修改。
+>
+> 💡 **提示**: 如果不确定是否要撤销修改，建议先使用 **"与 Git HEAD 比较文件"** 查看具体的修改内容，确认后再执行 revert。
 ## 配置
 
 在 VSCode/Cursor 设置中搜索 "Beyond Compare" 可以找到以下配置项：

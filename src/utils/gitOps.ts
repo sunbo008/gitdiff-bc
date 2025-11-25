@@ -44,26 +44,18 @@ export class GitOperations {
    */
   static async getFileContentAtHead(filePath: string): Promise<string> {
     try {
-      const dirPath = path.dirname(filePath);
-      
-      // 获取 Git 仓库根目录
-      const { stdout: repoRoot } = await execAsync('git rev-parse --show-toplevel', {
-        cwd: dirPath,
-        encoding: 'utf8'
-      });
-      
-      // 计算相对路径并规范化 Unicode
-      const relativePath = path.relative(repoRoot.trim(), filePath);
+      const repoRoot = await this.getRepoRoot(filePath);
+      const relativePath = path.relative(repoRoot, filePath);
       const normalizedPath = relativePath
-        .normalize('NFC')  // Unicode 规范化（Git 使用 NFC）
+        .normalize('NFC')
         .split(path.sep)
         .join('/');
       
       Logger.debug(`获取 HEAD 版本文件: ${normalizedPath}`);
       
-      // 获取 HEAD 版本的文件内容
+      // 使用仓库根目录作为 cwd
       const { stdout: content } = await execAsync(`git show "HEAD:${normalizedPath}"`, {
-        cwd: dirPath,
+        cwd: repoRoot,
         encoding: 'utf8',
         maxBuffer: 10 * 1024 * 1024 // 10MB
       });
@@ -90,19 +82,10 @@ export class GitOperations {
    */
   static async isFileTracked(filePath: string): Promise<boolean> {
     try {
-      const dirPath = path.dirname(filePath);
-      
-      // 获取仓库根目录
-      const { stdout: repoRoot } = await execAsync('git rev-parse --show-toplevel', {
-        cwd: dirPath,
-        encoding: 'utf8'
-      });
-      
-      const relativePath = path.relative(repoRoot.trim(), filePath);
-      
-      // 对于 macOS，规范化 Unicode 为 NFC 格式（Git 使用的格式）
+      const repoRoot = await this.getRepoRoot(filePath);
+      const relativePath = path.relative(repoRoot, filePath);
       const normalizedPath = relativePath
-        .normalize('NFC')  // Unicode 规范化
+        .normalize('NFC')
         .split(path.sep)
         .join('/');
       
@@ -111,7 +94,7 @@ export class GitOperations {
       // 方法1: 使用 git ls-files 检查
       try {
         const { stdout: lsFilesResult } = await execAsync(`git ls-files -- "${normalizedPath}"`, {
-          cwd: dirPath,
+          cwd: repoRoot,
           encoding: 'utf8'
         });
         if (lsFilesResult.trim().length > 0) {
@@ -125,7 +108,7 @@ export class GitOperations {
       // 方法2: 使用 git status 检查
       try {
         const { stdout: statusResult } = await execAsync(`git status --porcelain -- "${normalizedPath}"`, {
-          cwd: dirPath,
+          cwd: repoRoot,
           encoding: 'utf8'
         });
         if (statusResult.trim().length > 0 && !statusResult.trim().startsWith('??')) {
@@ -139,7 +122,7 @@ export class GitOperations {
       // 方法3: 直接尝试获取 HEAD 版本（最可靠的方法）
       try {
         await execAsync(`git show "HEAD:${normalizedPath}"`, {
-          cwd: dirPath,
+          cwd: repoRoot,
           encoding: 'utf8'
         });
         Logger.debug(`文件已跟踪 (HEAD): ${normalizedPath}`);
@@ -180,6 +163,157 @@ export class GitOperations {
       const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error('获取 Git 仓库根目录失败:', errorMessage);
       throw new Error('当前目录不是 Git 仓库。');
+    }
+  }
+
+  /**
+   * 检查文件是否有未提交的修改
+   */
+  static async hasUncommittedChanges(filePath: string): Promise<boolean> {
+    try {
+      const repoRoot = await this.getRepoRoot(filePath);
+      const relativePath = path.relative(repoRoot, filePath);
+      const normalizedPath = relativePath
+        .normalize('NFC')
+        .split(path.sep)
+        .join('/');
+      
+      Logger.debug(`检查文件修改状态: ${normalizedPath}`);
+      
+      // 使用仓库根目录作为 cwd
+      const { stdout } = await execAsync(`git status --porcelain -- "${normalizedPath}"`, {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      });
+      
+      const hasChanges = stdout.trim().length > 0 && !stdout.trim().startsWith('??');
+      Logger.debug(`文件修改状态: ${hasChanges ? '有修改' : '无修改'}`);
+      return hasChanges;
+    } catch (error) {
+      Logger.error('检查文件修改状态失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 检测 Git 版本是否支持 restore 命令
+   */
+  static async supportsGitRestore(): Promise<boolean> {
+    try {
+      const { stdout } = await execAsync('git --version', { encoding: 'utf8' });
+      const match = stdout.match(/git version (\d+)\.(\d+)/);
+      if (match) {
+        const major = parseInt(match[1]);
+        const minor = parseInt(match[2]);
+        const supportsRestore = major > 2 || (major === 2 && minor >= 23);
+        Logger.debug(`Git 版本: ${major}.${minor}, 支持 restore: ${supportsRestore}`);
+        return supportsRestore;
+      }
+      Logger.warn('无法检测 Git 版本，使用默认命令');
+      return false;
+    } catch (error) {
+      Logger.warn('检测 Git 版本失败，使用默认命令:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 撤销文件的修改，恢复到 HEAD 版本
+   */
+  static async revertFile(filePath: string): Promise<void> {
+    try {
+      const repoRoot = await this.getRepoRoot(filePath);
+      const relativePath = path.relative(repoRoot, filePath);
+      const normalizedPath = relativePath
+        .normalize('NFC')
+        .split(path.sep)
+        .join('/');
+      
+      Logger.info(`执行 revert: ${normalizedPath}`);
+      
+      // 检测是否支持 git restore
+      const useRestore = await this.supportsGitRestore();
+      
+      let gitCommand: string;
+      if (useRestore) {
+        gitCommand = `git restore "${normalizedPath}"`;
+        Logger.debug('使用 git restore 命令');
+      } else {
+        gitCommand = `git checkout HEAD -- "${normalizedPath}"`;
+        Logger.debug('使用 git checkout 命令 (Git 版本 < 2.23)');
+      }
+      
+      // 使用仓库根目录作为 cwd
+      await execAsync(gitCommand, {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      });
+      
+      Logger.info(`revert 成功: ${normalizedPath}`);
+    } catch (error: any) {
+      const errorMessage = error.message || String(error);
+      Logger.error('执行 revert 失败:', errorMessage);
+      throw new Error(`撤销修改失败: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * 撤销文件夹的修改，恢复到 HEAD 版本
+   */
+  static async revertFolder(folderPath: string): Promise<number> {
+    try {
+      const repoRoot = await this.getRepoRoot(folderPath);
+      const relativePath = path.relative(repoRoot, folderPath);
+      const normalizedPath = relativePath
+        .normalize('NFC')
+        .split(path.sep)
+        .join('/') || '.';
+      
+      Logger.info(`执行文件夹 revert: ${normalizedPath}`);
+      
+      // 先检查文件夹中有多少修改的文件
+      const { stdout: statusOutput } = await execAsync(
+        `git status --porcelain -- "${normalizedPath}"`,
+        {
+          cwd: repoRoot,
+          encoding: 'utf8'
+        }
+      );
+      
+      const modifiedFiles = statusOutput
+        .split('\n')
+        .filter(line => line.trim().length > 0 && !line.trim().startsWith('??'))
+        .length;
+      
+      if (modifiedFiles === 0) {
+        Logger.info('文件夹中没有修改的文件');
+        return 0;
+      }
+      
+      // 检测是否支持 git restore
+      const useRestore = await this.supportsGitRestore();
+      
+      let gitCommand: string;
+      if (useRestore) {
+        gitCommand = `git restore "${normalizedPath}"`;
+        Logger.debug('使用 git restore 命令');
+      } else {
+        gitCommand = `git checkout HEAD -- "${normalizedPath}"`;
+        Logger.debug('使用 git checkout 命令 (Git 版本 < 2.23)');
+      }
+      
+      // 使用仓库根目录作为 cwd
+      await execAsync(gitCommand, {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      });
+      
+      Logger.info(`文件夹 revert 成功，已恢复 ${modifiedFiles} 个文件`);
+      return modifiedFiles;
+    } catch (error: any) {
+      const errorMessage = error.message || String(error);
+      Logger.error('执行文件夹 revert 失败:', errorMessage);
+      throw new Error(`撤销文件夹修改失败: ${errorMessage}`);
     }
   }
 }

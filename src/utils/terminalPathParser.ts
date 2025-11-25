@@ -16,9 +16,10 @@ export class TerminalPathParser {
 
   /**
    * 文件路径的正则表达式
-   * 支持: Unix 路径 (path/to/file), Windows 路径 (C:\path\to\file), 包含空格的路径
+   * 支持: Unix 路径 (path/to/file), Windows 路径 (C:\path\to\file 或 path\to\file), 包含空格的路径
+   * 改进：更好地支持Windows反斜杠路径，使用更宽松的模式
    */
-  private static readonly FILE_PATH_PATTERN = /([a-zA-Z]:[\\/])?[^\s:]+(?:\s+[^\s:]+)*\.[a-zA-Z0-9]+/;
+  private static readonly FILE_PATH_PATTERN = /(?:[a-zA-Z]:[\\/])?(?:[^\s:]+[\\/])*[^\s:]+\.[a-zA-Z0-9]+/;
 
   /**
    * 从单行文本中提取文件路径
@@ -31,6 +32,29 @@ export class TerminalPathParser {
     }
 
     Logger.debug(`解析终端行: "${line}"`);
+    Logger.debug(`原始字节表示: ${JSON.stringify(line)}`);
+
+    // 0. 过滤掉明显的错误消息和提示信息
+    const trimmedLine = line.trim();
+    if (
+      trimmedLine.startsWith('无效的文件路径') ||
+      trimmedLine.startsWith('文件没有未提交') ||
+      trimmedLine.startsWith('错误:') ||
+      trimmedLine.startsWith('Error:') ||
+      trimmedLine.startsWith('警告:') ||
+      trimmedLine.startsWith('Warning:') ||
+      trimmedLine.includes('未在工作区中找到') ||
+      trimmedLine.includes('not found') ||
+      trimmedLine.length > 200 ||  // 文件路径不应该太长
+      // 过滤代码语句（包含常见编程关键字或模式）
+      /^(import|export|const|let|var|function|class|interface|type|await|async|return|if|for|while)\s/.test(trimmedLine) ||
+      trimmedLine.includes('executeCommand') ||
+      trimmedLine.includes('vscode.') ||
+      /^[a-zA-Z_$][a-zA-Z0-9_$]*\s*\(/.test(trimmedLine)  // 函数调用模式
+    ) {
+      Logger.debug('跳过非路径文本（错误消息、提示或代码）');
+      return null;
+    }
 
     // 1. 清理 git status 前缀
     const cleanedLine = this.cleanGitStatusPrefix(line);
@@ -48,15 +72,23 @@ export class TerminalPathParser {
     const match = trimmed.match(this.FILE_PATH_PATTERN);
     if (match) {
       const filePath = match[0];
-      Logger.debug(`提取文件路径: "${filePath}"`);
+      
+      // 额外验证：确保不是代码片段（仅用于警告，不阻止返回）
+      if (this.looksLikeCode(filePath)) {
+        Logger.warn(`⚠ 匹配的路径可能是代码: "${filePath}"`);
+      }
+      
+      Logger.info(`✓ 正则匹配成功，提取文件路径: "${filePath}"`);
+      Logger.info(`  匹配位置: ${match.index}, 原文: "${trimmed}"`);
       return filePath;
     }
 
     // 4. 如果没有匹配到扩展名，尝试将整行作为路径
     // 去除可能的注释和尾部内容
+    Logger.warn(`✗ 正则未匹配，尝试使用整行: "${trimmed}"`);
     const pathCandidate = trimmed.split(/\s*#/)[0].trim();
-    if (pathCandidate.length > 0) {
-      Logger.debug(`候选路径: "${pathCandidate}"`);
+    if (pathCandidate.length > 0 && !this.looksLikeCode(pathCandidate)) {
+      Logger.info(`使用候选路径: "${pathCandidate}"`);
       return pathCandidate;
     }
 
@@ -101,6 +133,36 @@ export class TerminalPathParser {
   }
 
   /**
+   * 检查字符串是否看起来像代码而非文件路径
+   * @param text 待检查的文本
+   * @returns 如果看起来像代码返回 true
+   */
+  private static looksLikeCode(text: string): boolean {
+    // 包含函数调用的括号对
+    if (/\([^)]*\)/.test(text)) {
+      return true;
+    }
+    
+    // 包含引号（字符串字面量）
+    if (/['"`]/.test(text)) {
+      return true;
+    }
+    
+    // 包含点号连接的多级调用（如 vscode.commands.executeCommand）
+    // 但排除文件路径（包含路径分隔符 / 或 \）
+    if (/\w+\.\w+\.\w+/.test(text) && !/[/\\]/.test(text)) {
+      return true;
+    }
+    
+    // 包含赋值或运算符
+    if (/[=<>!+\-*/%&|^]/.test(text)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
    * 将相对路径解析为绝对路径 Uri
    * @param relativePath 相对路径
    * @param workspaceFolders 工作区文件夹列表
@@ -114,34 +176,39 @@ export class TerminalPathParser {
       return null;
     }
 
-    Logger.debug(`解析文件路径: "${relativePath}"`);
+    Logger.info(`[resolveFilePath] 开始解析: "${relativePath}"`);
+    Logger.info(`[resolveFilePath] 路径信息: isAbsolute=${path.isAbsolute(relativePath)}, platform=${process.platform}`);
 
     // 1. 如果是绝对路径，直接使用
     if (path.isAbsolute(relativePath)) {
       const uri = vscode.Uri.file(relativePath);
-      Logger.debug(`使用绝对路径: ${uri.fsPath}`);
+      Logger.info(`[resolveFilePath] ✓ 使用绝对路径: ${uri.fsPath}`);
       return uri;
     }
 
     // 2. 如果没有工作区，无法解析相对路径
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      Logger.warn('没有工作区文件夹');
+      Logger.warn('[resolveFilePath] ✗ 没有工作区文件夹');
       return null;
     }
 
     // 3. 在所有工作区中搜索匹配的文件
+    Logger.info(`[resolveFilePath] 尝试在 ${workspaceFolders.length} 个工作区中查找`);
     for (const folder of workspaceFolders) {
       const absolutePath = path.join(folder.uri.fsPath, relativePath);
+      Logger.info(`[resolveFilePath] 检查路径: ${absolutePath}`);
       
       // 检查文件是否存在
       if (fs.existsSync(absolutePath)) {
         const uri = vscode.Uri.file(absolutePath);
-        Logger.debug(`在工作区中找到文件: ${uri.fsPath}`);
+        Logger.info(`[resolveFilePath] ✓ 在工作区中找到文件: ${uri.fsPath}`);
         return uri;
+      } else {
+        Logger.debug(`[resolveFilePath] 文件不存在: ${absolutePath}`);
       }
     }
 
-    Logger.debug(`未在工作区中找到文件: ${relativePath}`);
+    Logger.warn(`[resolveFilePath] ✗ 未在任何工作区中找到文件: ${relativePath}`);
     return null;
   }
 

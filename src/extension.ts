@@ -9,6 +9,9 @@ import {
   initializeStatusBar 
 } from './commands/compareTwoFiles';
 import { compareFileFromTerminal } from './commands/compareFileFromTerminal';
+import { revertFileToHead } from './commands/revertFile';
+import { revertFolderToHead } from './commands/revertFolder';
+import { revertFileFromTerminal } from './commands/revertFileFromTerminal';
 import { Logger } from './utils/logger';
 import { TempFileManager } from './utils/tempFile';
 import { t } from './utils/i18n';
@@ -147,6 +150,57 @@ export function activate(context: vscode.ExtensionContext) {
     );
     Logger.debug(t('extension.commandRegistered') + ': extension.compareFileFromTerminal');
 
+    // 注册命令：撤销文件修改
+    Logger.debug('注册命令: extension.revertFileToHead');
+    const revertFileCommand = vscode.commands.registerCommand(
+      'extension.revertFileToHead',
+      async (uri: vscode.Uri) => {
+        try {
+          Logger.info(`执行命令: revertFileToHead, 文件: ${uri?.fsPath || '未提供'}`);
+          await revertFileToHead(uri);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          Logger.error('执行撤销文件修改命令失败:', errorMessage);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
+        }
+      }
+    );
+    Logger.debug(t('extension.commandRegistered') + ': extension.revertFileToHead');
+
+    // 注册命令：撤销文件夹修改
+    Logger.debug('注册命令: extension.revertFolderToHead');
+    const revertFolderCommand = vscode.commands.registerCommand(
+      'extension.revertFolderToHead',
+      async (uri: vscode.Uri) => {
+        try {
+          Logger.info(`执行命令: revertFolderToHead, 文件夹: ${uri?.fsPath || '未提供'}`);
+          await revertFolderToHead(uri);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          Logger.error('执行撤销文件夹修改命令失败:', errorMessage);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
+        }
+      }
+    );
+    Logger.debug(t('extension.commandRegistered') + ': extension.revertFolderToHead');
+
+    // 注册命令：从终端撤销文件修改
+    Logger.debug('注册命令: extension.revertFileFromTerminal');
+    const revertFileFromTerminalCommand = vscode.commands.registerCommand(
+      'extension.revertFileFromTerminal',
+      async () => {
+        try {
+          Logger.info('执行命令: revertFileFromTerminal');
+          await revertFileFromTerminal();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          Logger.error('执行从终端撤销文件修改命令失败:', errorMessage);
+          vscode.window.showErrorMessage(`${t('extension.commandExecutionFailed')}: ${errorMessage}`);
+        }
+      }
+    );
+    Logger.debug(t('extension.commandRegistered') + ': extension.revertFileFromTerminal');
+
     // 监听配置变化
     const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('beyondCompare')) {
@@ -164,6 +218,9 @@ export function activate(context: vscode.ExtensionContext) {
       compareWithSelectedFileCommand,
       clearSelectedFileCommand,
       compareFileFromTerminalCommand,
+      revertFileCommand,
+      revertFolderCommand,
+      revertFileFromTerminalCommand,
       configWatcher
     );
 

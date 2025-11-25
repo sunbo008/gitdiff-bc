@@ -1,35 +1,41 @@
 import * as vscode from 'vscode';
-import { compareFileWithHead } from './compareFile';
+import { revertFileToHead } from './revertFile';
 import { TerminalPathParser } from '../utils/terminalPathParser';
 import { Logger } from '../utils/logger';
-import { t } from '../utils/i18n';
+import { t, isZhCN } from '../utils/i18n';
 
 /**
- * 最大批量比较文件数量（超过此数量需要用户确认）
+ * 最大批量 revert 文件数量（超过此数量需要用户确认）
  */
 const MAX_BATCH_FILES_WITHOUT_CONFIRM = 20;
 
 /**
- * 从终端比较文件与 Git HEAD
- * 支持单文件和批量文件比较
+ * 从终端撤销文件修改
+ * 支持单文件和批量文件 revert
  */
-export async function compareFileFromTerminal(): Promise<void> {
-  Logger.info('执行命令: compareFileFromTerminal');
+export async function revertFileFromTerminal(): Promise<void> {
+  Logger.info('===============================================');
+  Logger.info('执行命令: revertFileFromTerminal');
+  Logger.info('===============================================');
 
   try {
     // 1. 获取工作区文件夹
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      vscode.window.showErrorMessage(t('error.noWorkspace') || '没有打开的工作区');
+      Logger.error('没有打开的工作区');
+      vscode.window.showErrorMessage(t('error.noWorkspace'));
       return;
     }
+    Logger.info(`工作区文件夹: ${workspaceFolders.map(f => f.uri.fsPath).join(', ')}`);
 
     // 2. 获取活动终端
     const terminal = vscode.window.activeTerminal;
     if (!terminal) {
+      Logger.error('没有活动的终端');
       vscode.window.showErrorMessage('没有活动的终端');
       return;
     }
+    Logger.info(`活动终端: ${terminal.name}`);
 
     // 3. 尝试自动复制终端选中的文本
     // 使用 VSCode 内置命令复制终端选区
@@ -39,19 +45,19 @@ export async function compareFileFromTerminal(): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 200));
 
     // 4. 读取剪贴板内容
+    Logger.info('读取剪贴板内容');
     const clipboardText = await vscode.env.clipboard.readText();
     Logger.info(`剪贴板内容: ${clipboardText}`);
     
     if (clipboardText && clipboardText.trim().length > 0) {
       Logger.info('成功从终端复制文本');
-      await compareSingleOrBatchFiles(clipboardText, workspaceFolders);
+      await revertSingleOrBatchFiles(clipboardText, workspaceFolders);
       return;
     }
 
     // 5. 如果自动复制失败（例如没有选中文本），回退到手动输入
-    // 让用户输入文件路径
     const input = await vscode.window.showInputBox({
-      prompt: '未能自动获取选中文本，请粘贴要比较的文件路径',
+      prompt: '未能自动获取选中文本，请粘贴要撤销的文件路径',
       placeHolder: '例如: src/commands/compareFile.ts',
       validateInput: (value) => {
         if (!value || value.trim().length === 0) {
@@ -67,18 +73,18 @@ export async function compareFileFromTerminal(): Promise<void> {
     }
 
     // 6. 根据输入内容判断单文件或批量模式
-    await compareSingleOrBatchFiles(input, workspaceFolders);
+    await revertSingleOrBatchFiles(input, workspaceFolders);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    Logger.error('执行终端比较命令失败:', errorMessage);
-    vscode.window.showErrorMessage(`${t('error.compareFailed')}: ${errorMessage}`);
+    Logger.error('执行终端 revert 命令失败:', errorMessage);
+    vscode.window.showErrorMessage(`${t('error.revert.failed')}: ${errorMessage}`);
   }
 }
 
 /**
- * 比较单个或批量文件（根据文本内容自动判断）
+ * 撤销单个或批量文件（根据文本内容自动判断）
  */
-async function compareSingleOrBatchFiles(
+async function revertSingleOrBatchFiles(
   text: string,
   workspaceFolders: readonly vscode.WorkspaceFolder[]
 ): Promise<void> {
@@ -86,19 +92,19 @@ async function compareSingleOrBatchFiles(
   
   if (lines.length === 1 || lines.filter(l => l.trim().length > 0).length === 1) {
     // 单文件模式
-    Logger.info('单文件比较模式');
-    await compareSingleFile(text, workspaceFolders);
+    Logger.info('单文件 revert 模式');
+    await revertSingleFile(text, workspaceFolders);
   } else {
     // 批量模式
-    Logger.info('批量文件比较模式');
-    await compareBatchFiles(text, workspaceFolders);
+    Logger.info('批量文件 revert 模式');
+    await revertBatchFiles(text, workspaceFolders);
   }
 }
 
 /**
- * 比较单个文件
+ * 撤销单个文件
  */
-async function compareSingleFile(
+async function revertSingleFile(
   text: string,
   workspaceFolders: readonly vscode.WorkspaceFolder[]
 ): Promise<void> {
@@ -106,9 +112,7 @@ async function compareSingleFile(
   const filePath = TerminalPathParser.parseFilePathFromLine(text);
   
   if (!filePath) {
-    vscode.window.showErrorMessage(
-      t('error.terminal.noFilePathDetected') || '未检测到有效的文件路径'
-    );
+    vscode.window.showErrorMessage(t('error.terminal.noFilePathDetected'));
     return;
   }
 
@@ -118,21 +122,21 @@ async function compareSingleFile(
   const { uri, reason } = await TerminalPathParser.resolveAndValidateFilePath(filePath, workspaceFolders);
   
   if (!uri) {
-    const baseError = t('error.terminal.invalidFilePath') || '无效的文件路径';
+    const baseError = t('error.terminal.invalidFilePath');
     const detailedMessage = reason ? `${baseError}: ${filePath} (${reason})` : `${baseError}: ${filePath}`;
     
     vscode.window.showErrorMessage(detailedMessage);
     return;
   }
 
-  // 调用文件比较命令
-  await compareFileWithHead(undefined, uri.fsPath);
+  // 调用文件 revert 命令
+  await revertFileToHead(undefined, uri.fsPath);
 }
 
 /**
- * 批量比较文件
+ * 批量撤销文件
  */
-async function compareBatchFiles(
+async function revertBatchFiles(
   text: string,
   workspaceFolders: readonly vscode.WorkspaceFolder[]
 ): Promise<void> {
@@ -140,9 +144,7 @@ async function compareBatchFiles(
   const relativePaths = TerminalPathParser.parseMultipleFilePaths(text);
   
   if (relativePaths.length === 0) {
-    vscode.window.showErrorMessage(
-      t('error.terminal.noFilePathDetected') || '未检测到有效的文件路径'
-    );
+    vscode.window.showErrorMessage(t('error.terminal.noFilePathDetected'));
     return;
   }
 
@@ -155,41 +157,39 @@ async function compareBatchFiles(
   );
 
   if (validUris.length === 0) {
-    vscode.window.showErrorMessage(
-      t('error.terminal.noValidFiles') || '未找到有效的文件'
-    );
+    vscode.window.showErrorMessage(t('error.terminal.noValidFiles'));
     return;
   }
 
   Logger.info(`找到 ${validUris.length} 个有效文件`);
 
-  // 3. 如果文件数量超过限制，请求用户确认
-  if (validUris.length > MAX_BATCH_FILES_WITHOUT_CONFIRM) {
-    const confirmMessage = t('confirm.batchCompare')
-      ?.replace('{count}', validUris.length.toString()) ||
-      `检测到 ${validUris.length} 个文件，是否继续批量比较？这可能会打开多个 Beyond Compare 窗口`;
-    
-    const action = await vscode.window.showWarningMessage(
-      confirmMessage,
-      { modal: true },
-      '继续',
-      '取消'
-    );
+  // 3. 显示确认对话框
+  const confirmMessage = t('confirm.revert.batchFiles', validUris.length);
+  const detailText = validUris.map(uri => uri.fsPath).join('\n');
+  
+  const confirmButton = isZhCN() ? '确认' : 'Confirm';
+  const cancelButton = isZhCN() ? '取消' : 'Cancel';
+  
+  const choice = await vscode.window.showWarningMessage(
+    confirmMessage + '\n\n' + (validUris.length <= 20 ? detailText : `${validUris.slice(0, 20).map(u => u.fsPath).join('\n')}\n...还有 ${validUris.length - 20} 个文件`),
+    { modal: true },
+    confirmButton,
+    cancelButton
+  );
 
-    if (action !== '继续') {
-      Logger.info('用户取消了批量比较');
-      return;
-    }
+  if (choice !== confirmButton) {
+    Logger.info('用户取消了批量 revert');
+    return;
   }
 
-  // 4. 批量比较文件（带进度提示）
-  await compareFilesWithProgress(validUris, skippedCount);
+  // 4. 批量撤销文件（带进度提示）
+  await revertFilesWithProgress(validUris, skippedCount);
 }
 
 /**
- * 带进度提示的批量文件比较
+ * 带进度提示的批量文件撤销
  */
-async function compareFilesWithProgress(
+async function revertFilesWithProgress(
   uris: vscode.Uri[],
   skippedCount: number
 ): Promise<void> {
@@ -199,7 +199,7 @@ async function compareFilesWithProgress(
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: t('progress.batchCompare') || '批量比较文件',
+      title: t('progress.reverting'),
       cancellable: true
     },
     async (progress, token) => {
@@ -208,7 +208,7 @@ async function compareFilesWithProgress(
       for (let i = 0; i < uris.length; i++) {
         // 检查是否取消
         if (token.isCancellationRequested) {
-          Logger.info(`用户取消批量比较，已比较 ${successCount}/${total} 个文件`);
+          Logger.info(`用户取消批量 revert，已处理 ${successCount}/${total} 个文件`);
           break;
         }
 
@@ -218,22 +218,18 @@ async function compareFilesWithProgress(
 
         // 更新进度
         progress.report({
-          message: t('progress.comparingFile')
-            ?.replace('{current}', current.toString())
-            ?.replace('{total}', total.toString())
-            ?.replace('{filename}', fileName) ||
-            `正在比较第 ${current}/${total} 个文件: ${fileName}`,
+          message: t('progress.revertingFile', current, total, fileName),
           increment: (100 / total)
         });
 
         try {
-          await compareFileWithHead(undefined, uri.fsPath);
+          await revertFileToHead(undefined, uri.fsPath);
           successCount++;
           
-          // 添加短暂延迟，避免同时启动过多 BC 窗口
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // 添加短暂延迟
+          await new Promise(resolve => setTimeout(resolve, 200));
         } catch (error) {
-          Logger.error(`比较文件失败: ${uri.fsPath}`, error);
+          Logger.error(`撤销文件失败: ${uri.fsPath}`, error);
           failedCount++;
         }
       }
@@ -241,13 +237,13 @@ async function compareFilesWithProgress(
   );
 
   // 显示摘要信息
-  showBatchCompareSummary(successCount, failedCount, skippedCount);
+  showBatchRevertSummary(successCount, failedCount, skippedCount);
 }
 
 /**
- * 显示批量比较摘要信息
+ * 显示批量 revert 摘要信息
  */
-function showBatchCompareSummary(
+function showBatchRevertSummary(
   successCount: number,
   failedCount: number,
   skippedCount: number
@@ -255,14 +251,9 @@ function showBatchCompareSummary(
   let message: string;
 
   if (skippedCount > 0) {
-    message = t('success.batchCompareWithSkipped')
-      ?.replace('{success}', successCount.toString())
-      ?.replace('{skipped}', skippedCount.toString()) ||
-      `成功比较 ${successCount} 个文件，跳过 ${skippedCount} 个无效路径`;
+    message = t('success.revert.batchWithSkipped', successCount, skippedCount);
   } else {
-    message = t('success.batchCompare')
-      ?.replace('{success}', successCount.toString()) ||
-      `成功比较 ${successCount} 个文件`;
+    message = t('success.revert.batch', successCount);
   }
 
   if (failedCount > 0) {
@@ -272,6 +263,9 @@ function showBatchCompareSummary(
   Logger.info(message);
   vscode.window.showInformationMessage(message);
 }
+
+
+
 
 
 
