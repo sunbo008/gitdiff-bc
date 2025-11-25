@@ -5,22 +5,18 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
-
 jobs:
   release:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '16'
       
       - name: Install dependencies
         run: npm ci
@@ -28,44 +24,36 @@ jobs:
       - name: Compile TypeScript
         run: npm run compile
       
-      - name: Install vsce
-        run: npm install -g @vscode/vsce
-      
-      - name: Package extension
-        run: vsce package --out dist/
+      - name: Package VSIX
+        run: |
+          npm install -g @vscode/vsce
+          vsce package
       
       - name: Extract version from tag
-        id: version
+        id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       
-      - name: Extract changelog for version
+      - name: Extract changelog
         id: changelog
         run: |
-          VERSION=${{ steps.version.outputs.VERSION }}
-          
-          # 从 CHANGELOG.md 提取对应版本的内容
-          # 查找 ## [版本号] 到下一个 ## [版本号] 之间的内容
-          CHANGELOG=$(awk "/## \[$VERSION\]/,/## \[/{if(/## \[/ && !/## \[$VERSION\]/)exit;print}" CHANGELOG.md | sed '1d' | sed '/^$/d')
-          
-          # 如果提取失败，使用默认说明
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          # 从 CHANGELOG.md 提取当前版本的更新内容
+          # 匹配 ## [版本号] 到下一个 ## [版本号] 之间的内容
+          CHANGELOG=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
           if [ -z "$CHANGELOG" ]; then
-            CHANGELOG="Release version $VERSION"
+            CHANGELOG="Release version ${VERSION}"
           fi
-          
-          # 保存到文件，避免多行文本问题
-          echo "$CHANGELOG" > /tmp/release-notes.txt
-          
-          # 输出到 GitHub Actions
-          echo "notes_file=/tmp/release-notes.txt" >> $GITHUB_OUTPUT
+          # 处理多行文本，使用 EOF 标记
+          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
-          name: v${{ steps.version.outputs.VERSION }}
-          body_path: ${{ steps.changelog.outputs.notes_file }}
-          files: dist/*.vsix
+          body: ${{ steps.changelog.outputs.NOTES }}
+          files: '*.vsix'
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
