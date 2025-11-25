@@ -152,6 +152,12 @@ cursor --install-extension gitdiff-bc-0.1.5.vsix
 - `src/file.ts` - 纯路径
 - `src/file with spaces.ts` - 包含空格的路径
 
+> ⚠️ **Windows 用户注意**: 如果在终端右键时触发粘贴而非显示菜单，请调整以下设置：
+>
+> 1. 打开设置（`Ctrl+,`）
+> 2. 搜索 `terminal.integrated.rightClickBehavior`
+> 3. 将其设置为 `"default"` 或 `"selectWord"`
+   ![rightClickBehavior](docs/images/usage/windows-rightClickBehavior.png)
 ## 配置
 
 在 VSCode/Cursor 设置中搜索 "Beyond Compare" 可以找到以下配置项：
