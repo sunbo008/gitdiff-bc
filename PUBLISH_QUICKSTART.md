@@ -36,6 +36,13 @@ npm run check
 npm run publish:patch   # 修复 bug: 0.1.0 → 0.1.1
 npm run publish:minor   # 新功能: 0.1.0 → 0.2.0
 npm run publish:major   # 破坏性更改: 0.1.0 → 1.0.0
+
+# 这将自动完成：
+# ✅ 运行发布前检查
+# ✅ 更新版本号并创建 Git tag
+# ✅ 发布到 VSCode Marketplace
+# ✅ 推送代码和 tag 到 GitHub
+# ✅ 触发 GitHub Actions 创建 Release 并上传 VSIX
 ```
 
 就这么简单！✅

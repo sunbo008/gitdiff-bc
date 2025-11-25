@@ -160,9 +160,9 @@
     "test": "node ./out/test/runTest.js",
     "package": "vsce package --out dist/",
     "check": "node scripts/pre-publish-check.js",
-    "publish:patch": "npm run check && vsce publish patch",
-    "publish:minor": "npm run check && vsce publish minor",
-    "publish:major": "npm run check && vsce publish major"
+    "publish:patch": "npm run check && vsce publish patch && git push && git push --tags",
+    "publish:minor": "npm run check && vsce publish minor && git push && git push --tags",
+    "publish:major": "npm run check && vsce publish major && git push && git push --tags"
   },
   "devDependencies": {
     "@types/vscode": "^1.60.0",
