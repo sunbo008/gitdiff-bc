@@ -117,6 +117,8 @@ echo ""
 
 # 3. 构建
 echo "🔨 [3/8] 编译和打包..."
+# 清理旧的 VSIX 文件，确保只安装最新构建的版本
+rm -f dist/*.vsix 2>/dev/null || true
 npm run package
 
 if [ $? -ne 0 ]; then
@@ -124,8 +126,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 检查 VSIX 文件
-VSIX_FILE=$(ls dist/gitdiff-bc-*.vsix 2>/dev/null | head -n 1)
+# 检查 VSIX 文件（按修改时间倒序，选择最新的，作为双重保险）
+VSIX_FILE=$(ls -t dist/gitdiff-bc-*.vsix 2>/dev/null | head -n 1)
 
 if [ -z "$VSIX_FILE" ]; then
     echo "❌ 错误：找不到 VSIX 文件"
